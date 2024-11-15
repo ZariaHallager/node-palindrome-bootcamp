@@ -1,27 +1,67 @@
-const express = require('express');
+const http = require('http');
+const fs = require('fs');
 const path = require('path');
 
-const app = express();
-const PORT = 3000;
-
-// Serve static files
-app.use(express.static(path.join(__dirname)));
-
-// Function to check if a string is a palindrome
 function isPalindrome(str) {
     const cleanedStr = str.replace(/[^A-Za-z0-9]/g, '').toLowerCase();
     const reversedStr = cleanedStr.split('').reverse().join('');
     return cleanedStr === reversedStr;
 }
 
-// Endpoint to check palindrome
-app.get('/check', (req, res) => {
-    const input = req.query.input;
-    if (isPalindrome(input)) {
-        res.json({ message: `"${input}" is a palindrome!` });
+
+const server = http.createServer((req, res) => {
+    const url = req.url;
+
+    if (url === '/') {
+        fs.readFile('index.html', (err, data) => {
+            if (err) {
+                res.writeHead(500);
+                res.end('Error loading index.html');
+            } else {
+                res.writeHead(200, { 'Content-Type': 'text/html' });
+                res.end(data);
+            }
+        });
+    } else if (url === '/style.css') {
+        fs.readFile('style.css', (err, data) => {
+            if (err) {
+                res.writeHead(500);
+                res.end('Error loading style.css');
+            } else {
+                res.writeHead(200, { 'Content-Type': 'text/css' });
+                res.end(data);
+            }
+        });
+    } else if (url === '/script.js') {
+        fs.readFile('script.js', (err, data) => {
+            if (err) {
+                res.writeHead(500);
+                res.end('Error loading script.js');
+            } else {
+                res.writeHead(200, { 'Content-Type': 'application/javascript' });
+                res.end(data);
+            }
+        });
+    } else if (url.startsWith('/check')) {
+        const query = new URLSearchParams(url.split('?')[1]);
+        const input = query.get('input');
+        let message;
+
+        if (isPalindrome(input)) {
+            message = `"${input}" is a palindrome!`;
+        } else {
+            message = `"${input}" is not a palindrome. Example of a palindrome: "A man, a plan, a canal, Panama"`;
+        }
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ message }));
     } else {
-        res.json({ message: `"${input}" is not a palindrome. Example of a palindrome: "A man, a plan, a canal, Panama"` });
+        res.writeHead(404);
+        res.end('404 Not Found');
     }
 });
 
-// Start the server
+const PORT = 3000;
+server.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+});
